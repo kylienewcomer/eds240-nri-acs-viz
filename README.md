@@ -9,6 +9,7 @@ This repository contains the materials for visualizing FEMA National Risk Index 
 
 ## Data
 Data for this project comes from [FEMA](https://www.fema.gov/flood-maps/products-tools/national-risk-index) National Risk Index from the Resilience Analysis & Planning Tool. Risk is calculated with the follow equations: 
+
 $$Risk = Expected Annual Loss * Community Risk Factor$$ 
 
 $$Community Risk Factor = f(Social Vulnerability / Community Resilience)$$ 
