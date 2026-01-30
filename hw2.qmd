@@ -1,0 +1,81 @@
+---
+title: "National Risk Index in California Counties"
+author: "Kylie Newcomer"
+date: "1/28/2025"
+format: html
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+
+# Read in data with clean names
+nri <- read_csv(here::here("data", "National_Risk_Index_Counties_807384124455672111.csv")) %>% 
+  janitor::clean_names()
+
+# Filter out US territories and districts
+nri_states <- nri %>% 
+  filter(state_name_abbreviation != "GU" & 
+           state_name_abbreviation != "PR" & 
+           state_name_abbreviation != "MP" & 
+           state_name_abbreviation != "VI" & 
+           state_name_abbreviation != "AS" & 
+           state_name_abbreviation != "DC")
+```
+
+## Data wrangling
+```{r}
+nri_states_med <- nri_states %>%
+  group_by(state_name) %>%
+  mutate(median_nri = median(national_risk_index_score_composite)) %>% # Find median of NRI value by state
+  ungroup() %>% 
+  mutate(state_name = fct_reorder(.f = state_name, .x = median_nri)) # Reorder states based on median NRI
+```
+
+## Create figure
+```{r, fig.alt= "A horizontal boxplot displaying county National Risk Index Scores by U.S. state. States are ordered by median score, with California having the highest median of about 90 and only four counties falling below a 'Relatively High' risk rating."}
+
+ggplot(nri_states_med, aes(national_risk_index_score_composite, state_name)) +
+  geom_boxplot() +
+  # Label risk ratings thresholds
+  geom_vline(xintercept = 80, color = "#C6445FFF", linetype = 2) +
+  geom_label(aes(90, 47), label = "Very High (80-100)", size = 2, fill = alpha("#C6445FFF", 0.25)) +
+  geom_vline(xintercept = 60, color = "#db7467", linetype = 2) +
+  geom_label(aes(70, 47), label = "Relatively High (60-80)", size = 2, fill = alpha("#db7467", 0.25)) +
+  geom_vline(xintercept = 40, color = "#f9d562", linetype = 2) +
+  geom_label(aes(50, 47), label = "Relatively Moderate (40-60)", size = 2, fill = alpha("#f9d562", 0.25)) +
+  geom_vline(xintercept = 20, color = "#4F9BC6FF", linetype = 2) +
+  geom_label(aes(30, 47), label = "Relatively Low (20-40)", size = 2, fill = alpha("#4F9BC6FF", 0.25)) +
+  geom_vline(xintercept = 0, color = "#4F6DBA", linetype = 2) +
+  geom_label(aes(10, 47), label = "Very Low (0-20)", size = 2, fill = alpha("#4F6DBA", 0.25)) +
+  gghighlight::gghighlight(state_name_abbreviation == "CA") +
+  labs(x = "National Risk Index Score Composite",
+       y = "",
+       caption = "Data Source: FEMA National Risk Index (2025 Release)", 
+       title = "FEMA National Risk Index across U.S.",
+       subtitle = "U.S. states ranked by median county NRI score") +
+  theme_light() +
+  theme(axis.text.x = element_text(size = 10),
+        axis.text.y = element_text(size = 5.5)
+        )
+  
+
+```
+## Questions
+**1.** My variables for this figure are
+- State (categorical)
+- County (categorical)
+- National Risk Index Score Composite (numeric)
+- NRI Rating (categorical)
+
+**2.** In order to show the distribution of county scores across state, I decided to use a boxplot because it shows the spread while showing the median, quantiles, and outliers. It also allowed for me for show all states at one time without looking *too* crazy. Alternatively, I could have used a density ridge plot or a violin plot to show distribution, however I felt it was hard to represent all 50 states with those types.
+
+**3.** My figure shows that California had the highest median NRI score of any U.S. state. The majority of CA counties fall within the relatively high to very high risk range with the exception of a few outliers.
+
+**4.** To make the figure more readable, I highlighted only California to better view the difference between CA county NRIs and other states. I flipped the x and y coefficients for a more visually pleasing layout. Additionally, I adjusted the state name text on the y axis to a smaller size to get rid of overlap. I also color-coded the lines and labels for the risk ratings.
+
+**5.** I wanted to adjust the background alpha of my text labels, but I was unable to. I would have also liked to find a way to put the labels on without obstructing the plot. I also wanted to find a way to label the states more clearly (cursor highlight / interactive plot) instead of having them labeled on the side (I also feel like the states didn't need to be individually labeled, but decided to keep it). I also felt like the yellow line was hard to see, but I wanted to be consistent with the FEMA NRI colors. 
+
