@@ -1,0 +1,125 @@
+---
+title: "Assessing NRI Ratings Across Racial and Ethnic Groups in California"
+author: "Kylie Newcomer"
+date: 2/12/26
+format: html
+execute:
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidycensus)
+library(tidyverse)
+```
+
+```{r}
+# Read in ACS data
+#....Step 1a: see all available ACS variables + descriptions.....
+#acs_vars <- tidycensus::load_variables(year = 2023,
+                                       #dataset = "acs1")
+
+#..............Step 1b: import race & ethnicity data.............
+# race_ethnicity <- tidycensus::get_acs(
+#   geography = "county",
+#   survey = "acs1",
+#   # NOTE: you may not end up using all these variables
+#   variables = c("B01003_001", "B02001_002", "B02001_003", 
+#                 "B02001_004", "B02001_005", "B02001_006",
+#                 "B02001_007", "B02001_008", "B03002_012",
+#                 "B03002_002"),
+#   state = "CA", 
+#   year = 2023) |>
+#   # join variable descriptions (so we know what's what!)
+#   dplyr::left_join(acs_vars, by = dplyr::join_by(variable == name)) 
+# 
+# #.................Step 2: write ACS data to file.................
+# readr::write_csv(race_ethnicity, here::here("data", "ACS-1yr-2023-county-race-ethnicity.csv"))
+
+#..................Step 3: read in your CSV file.................
+race_ethnicity <- readr::read_csv(here::here("data", "ACS-1yr-2023-county-race-ethnicity.csv"))
+```
+
+```{r}
+# Read in NRI data
+nri <- read_csv(here::here("data", "National_Risk_Index_Counties_807384124455672111.csv")) %>% 
+  janitor::clean_names()
+
+# Select California
+nri_ca <- nri %>% 
+  filter(state_name_abbreviation == "CA")
+```
+
+
+```{r}
+# Separate county from state name
+race_ethnicity[c("county_name", "state")] <- str_split_fixed(race_ethnicity$NAME, " County, ", 2)
+
+race_ethnicity <- race_ethnicity %>% 
+  mutate(label_simple = case_when( # Clean up names
+    str_detect(label, "White") ~ "White",
+    str_detect(label, "Black") ~ "Black or African American",
+    str_detect(label, "Alaska") ~ "Native American and Alaska Native",
+    str_detect(label, "Asian") ~ "Asian",
+    str_detect(label, "Hawaiian") ~ "Native Hawaiian and Other Pacific Islander",
+    str_detect(label, "Some") ~ "Other Race",
+    str_detect(label, "Not") ~ "Not Hispanic or Latino",
+    str_detect(label, "Hispanic") ~ "Hispanic or Latino",
+    str_detect(label, "Two") ~ "Two or More Races",
+    TRUE ~ "Total Population"
+  )) %>% 
+  select(estimate, county_name, label_simple) %>% 
+  janitor::clean_names()
+```
+
+```{r}
+# Combine nri and acs data
+nri_acs <- left_join(race_ethnicity, nri_ca) 
+```
+
+```{r}
+# Reorder the NRI ratings from lowest to highest
+nri_acs$national_risk_index_rating_composite <- factor(nri_acs$national_risk_index_rating_composite, levels = c("Relatively Low", "Relatively Moderate", "Relatively High", "Very High"))
+```
+
+
+```{r, fig.alt= "A heatmap showing the proportion of individuals of racial and ethnic groups living in counties assessed by the National Risk Index, with NRI rating on the x-axis and the racial or ethnic group on the y axis. Every group has the highest population proportion living in the highest risk rating, with proportions decreasing with risk rating. Asian and Black populations had the highest proportions in the highest risk area, and the white population has the most evenly distributed proportions across risk rating of any racial or ethnic group."}
+nri_acs %>% 
+  filter(label_simple != "Total Population" &
+           label_simple != "Not Hispanic or Latino") %>% 
+  select(county_name, estimate, label_simple, national_risk_index_rating_composite) %>%
+  group_by(label_simple) %>% 
+  mutate(total = sum(estimate)) %>% # Find total popualtion of each group
+  ungroup() %>%
+  mutate(label_simple = fct_reorder(.f = label_simple, .x = total)) %>% # Reorder by population sizes
+  group_by(label_simple, national_risk_index_rating_composite) %>% 
+  summarize(pop_prop = (sum(estimate) / total)) %>%  # Calculate proportion of each group in each risk rating
+  ungroup() %>% 
+ggplot(aes(x = national_risk_index_rating_composite, y = label_simple, fill = pop_prop)) +
+  geom_tile() +
+  scale_fill_viridis_c(option = "magma", direction = -1, labels = scales::label_percent()) +
+  scale_x_discrete(expand = c(0, 0)) + # Remove dead space
+  scale_y_discrete(expand = c(0, 0)) +
+  labs(y = "Race / Ethnicity",
+       x = "NRI Rating",
+       fill = "Proportion of \nIndividuals",
+       title = "Proportion of Racial and Ethnic Identities \nLiving in each NRI rating",
+       subtitle = "The highest proportion of each racial/ethnic group live in the \nVery High risk rating, with Asian and Black \npopulations having the largest proportions") +
+  theme_light() +
+  theme(axis.text.x = element_text(size = 6.5))
+```
+
+
+## Questions
+**1.** Variables of interest:
+- Race/Ethnicity (categorical)
+- NRI rating (categorical)
+- number of individuals (numeric)
+
+**2.** I chose to use a heatmap, because I was focusing on two categorical variables and one numeric. I wanted to see patterns in both the race/ethnicities and the NRI ratings. I also could have used a stacked bar chart with the proportions of each racial / ethnic groups by NRI rating or score. 
+
+**3.** My figure show the highest proportion of each racial / ethnic group resides in the "Very High" risk rating, with Asian and Black / African American populations having the highest proportions statewide. Additionally, the white population has a higher proportion living in the "Relatively Low" risk rating, where as the other racial and ethnic groups are majority living in "Relatively High" and "Very High" risk counties.
+
+**4.** To make my figure more readable, I adjusted font sizes so there was no text overlap. I also reordered the categorical variables, with racial and ethnic groups ordered from highest to lowest population in CA, and re-factored the risk ratings from lowest to highest, to visualize any trends better.
+
+**5.** I would have liked a to add line breaks in my x and y axis text so the labels aren't long strings. I felt like my x axis text was a little to small, but I didn't want any overlap(line breaks would have helped with that too).
