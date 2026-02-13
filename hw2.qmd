@@ -38,25 +38,30 @@ nri_states_med <- nri_states %>%
 ## Create figure
 ```{r, fig.alt= "A horizontal boxplot displaying county National Risk Index Scores by U.S. state. States are ordered by median score, with California having the highest median of about 90 and only four counties falling below a 'Relatively High' risk rating."}
 
+national_median <- median(nri_states$national_risk_index_score_composite)
+
 ggplot(nri_states_med, aes(national_risk_index_score_composite, state_name)) +
   geom_boxplot() +
+  #scale_color_manual(values = c("#C6445FFF", "#db7467", "#f9d562", "#4F9BC6FF", "#4F6DBA"))
   # Label risk ratings thresholds
-  geom_vline(xintercept = 80, color = "#C6445FFF", linetype = 2) +
-  geom_label(aes(90, 47), label = "Very High (80-100)", size = 2, fill = alpha("#C6445FFF", 0.25)) +
-  geom_vline(xintercept = 60, color = "#db7467", linetype = 2) +
-  geom_label(aes(70, 47), label = "Relatively High (60-80)", size = 2, fill = alpha("#db7467", 0.25)) +
-  geom_vline(xintercept = 40, color = "#f9d562", linetype = 2) +
-  geom_label(aes(50, 47), label = "Relatively Moderate (40-60)", size = 2, fill = alpha("#f9d562", 0.25)) +
-  geom_vline(xintercept = 20, color = "#4F9BC6FF", linetype = 2) +
-  geom_label(aes(30, 47), label = "Relatively Low (20-40)", size = 2, fill = alpha("#4F9BC6FF", 0.25)) +
-  geom_vline(xintercept = 0, color = "#4F6DBA", linetype = 2) +
-  geom_label(aes(10, 47), label = "Very Low (0-20)", size = 2, fill = alpha("#4F6DBA", 0.25)) +
+  geom_vline(xintercept = national_median, linetype = 2) +
+  geom_label(aes(60, 49), label = "National Median", size = 3) +
+  #geom_vline(xintercept = 80, color = "#C6445FFF", linetype = 2) +
+  #geom_label(aes(90, 55), label = "Very High (80-100)", size = 2, fill = alpha("#C6445FFF", 0.25)) +
+  #geom_vline(xintercept = 60, color = "#db7467", linetype = 2) +
+  #geom_label(aes(70, 47), label = "Relatively High (60-80)", size = 2, fill = alpha("#db7467", 0.25)) +
+  #geom_vline(xintercept = 40, color = "#f9d562", linetype = 2) +
+  #geom_label(aes(50, 47), label = "Relatively Moderate (40-60)", size = 2, fill = alpha("#f9d562", 0.25)) +
+  #geom_vline(xintercept = 20, color = "#4F9BC6FF", linetype = 2) +
+  #geom_label(aes(30, 47), label = "Relatively Low (20-40)", size = 2, fill = alpha("#4F9BC6FF", 0.25)) +
+  #geom_vline(xintercept = 0, color = "#4F6DBA", linetype = 2) +
+  #geom_label(aes(10, 47), label = "Very Low (0-20)", size = 2, fill = alpha("#4F6DBA", 0.25)) +
   gghighlight::gghighlight(state_name_abbreviation == "CA") +
   labs(x = "National Risk Index Score Composite",
        y = "",
        caption = "Data Source: FEMA National Risk Index (2025 Release)", 
-       title = "FEMA National Risk Index across U.S.",
-       subtitle = "U.S. states ranked by median county NRI score") +
+       title = "FEMA National Risk Index across the U.S.",
+       subtitle = "U.S. states ranked by median county NRI score with California having the highest median \nand majority of counties above the national median") +
   theme_light() +
   theme(axis.text.x = element_text(size = 10),
         axis.text.y = element_text(size = 5.5)
@@ -69,11 +74,10 @@ ggplot(nri_states_med, aes(national_risk_index_score_composite, state_name)) +
 - State (categorical)
 - County (categorical)
 - National Risk Index Score Composite (numeric)
-- NRI Rating (categorical)
 
 **2.** In order to show the distribution of county scores across state, I decided to use a boxplot because it shows the spread while showing the median, quantiles, and outliers. It also allowed for me for show all states at one time without looking *too* crazy. Alternatively, I could have used a density ridge plot or a violin plot to show distribution, however I felt it was hard to represent all 50 states with those types.
 
-**3.** My figure shows that California had the highest median NRI score of any U.S. state. The majority of CA counties fall within the relatively high to very high risk range with the exception of a few outliers.
+**3.** My figure shows that California had the highest median NRI score of any U.S. state. The majority of CA counties are above the national median with the exception of a few outliers.
 
 **4.** To make the figure more readable, I highlighted only California to better view the difference between CA county NRIs and other states. I flipped the x and y coefficients for a more visually pleasing layout. Additionally, I adjusted the state name text on the y axis to a smaller size to get rid of overlap. I also color-coded the lines and labels for the risk ratings.
 
