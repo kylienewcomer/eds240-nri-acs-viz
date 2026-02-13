@@ -2,7 +2,7 @@
 
 ## Author: Kylie Newcomer
 
-### Date Published: 1/29/2026
+### Date Published: 2/12/2026
 
 ## Overview
 This repository contains the materials for visualizing FEMA National Risk Index (NRI) data homework assignment for *EDS 240 - Data Visualization & Communication*. Materials for this assignment can be found on the [course website](https://eds-240-data-viz.github.io/). This project aims to visualize the risk index of counties in California versus across the United States.
